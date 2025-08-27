@@ -248,29 +248,38 @@
             font-size: 18px;
         }
         
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            color: #e74c3c;
+            background-color: #ffeaea;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
         @media (max-width: 768px) {
             .players-table {
                 display: block;
                 overflow-x: auto;
             }
-            
+
             .controls {
                 flex-direction: column;
             }
-            
+
             .search-box {
                 max-width: 100%;
             }
-            
+
             .filter-group {
                 width: 100%;
                 justify-content: space-between;
             }
-            
+
             .filter-group select {
                 flex: 1;
             }
-            
+
             .back-button {
                 position: relative;
                 top: 0;
@@ -282,256 +291,424 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="back-button" onclick="window.location.href='../inicial.html'">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </button>
-        
-        <div class="header">
-            <div class="player-icon">
-                <i class="fas fa-users"></i>
-            </div>
-            <h1>Listagem de Players</h1>
-            <p>Visualize todos os players cadastrados no sistema</p>
+<div class="container">
+    <button class="back-button" onclick="window.location.href='../inicial.html'">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </button>
+
+    <div class="header">
+        <div class="player-icon">
+            <i class="fas fa-users"></i>
         </div>
-        
-        <div class="controls">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Pesquisar players...">
-            </div>
-            
-            <div class="filter-group">
-                <select id="platformFilter">
-                    <option value="">Todas as plataformas</option>
-                    <option value="PC">PC</option>
-                    <option value="Playstation">Playstation</option>
-                    <option value="Xbox">Xbox</option>
-                    <option value="Nintendo">Nintendo Switch</option>
-                </select>
-                
-                <select id="sortBy">
-                    <option value="nickname">Ordenar por Nickname</option>
-                    <option value="id">Ordenar por ID</option>
-                    <option value="platform">Ordenar por Plataforma</option>
-                </select>
-            </div>
+        <h1>Listagem de Players</h1>
+        <p>Visualize todos os players cadastrados no sistema</p>
+    </div>
+
+    <div class="controls">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Pesquisar players...">
         </div>
-        
-        <div id="loading" class="loading">Carregando players...</div>
-        
-        <div id="playersContent" style="display: none;">
-            <table class="players-table">
-                <thead>
-                    <tr>
-                        <th>ID <i class="fas fa-sort"></i></th>
-                        <th>Nickname <i class="fas fa-sort"></i></th>
-                        <th>Plataforma <i class="fas fa-sort"></i></th>
-                        <th>Email <i class="fas fa-sort"></i></th>
-                    </tr>
-                </thead>
-                <tbody id="playersTableBody">
-                    <!-- Os players serão carregados via JavaScript -->
-                </tbody>
-            </table>
-            
-            <div class="pagination" id="pagination">
-                <!-- A paginação será gerada via JavaScript -->
-            </div>
-        </div>
-        
-        <div id="noResults" class="no-results" style="display: none;">
-            <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px;"></i>
-            <p>Nenhum player encontrado com os critérios de pesquisa.</p>
+
+        <div class="filter-group">
+            <select id="platformFilter">
+                <option value="">Todas as plataformas</option>
+                <option value="PC">PC</option>
+                <option value="Playstation">Playstation</option>
+                <option value="Xbox">Xbox</option>
+                <option value="Nintendo">Nintendo Switch</option>
+            </select>
+
+            <select id="sortBy">
+                <option value="id">Ordenar por ID</option>
+                <option value="nickname">Ordenar por Nickname</option>
+                <option value="plataforma">Ordenar por Plataforma</option>
+            </select>
         </div>
     </div>
 
-    <div class="footer">
-        <p>&copy; 2025 GameScore Manager - Todos os direitos reservados</p>
+    <div id="loading" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> Carregando players...
     </div>
 
-    <script>
-        // Dados simulados de players (em um sistema real, viriam de uma API)
-        const players = [
-            { id: 1, nickname: "joaozinho", platform: "PC", email: "joao@email.com" },
-            { id: 2, nickname: "marygame", platform: "Nintendo", email: "mary@email.com" },
-            { id: 3, nickname: "pedroc", platform: "Xbox", email: "pedro@email.com" },
-            { id: 4, nickname: "aninha", platform: "Playstation", email: "ana@email.com" },
-            { id: 5, nickname: "gamer123", platform: "PC", email: "gamer@email.com" },
-            { id: 6, nickname: "proplayer", platform: "Playstation", email: "pro@email.com" },
-            { id: 7, nickname: "darkknight", platform: "Xbox", email: "bruce@wayne.com" },
-            { id: 8, nickname: "wonderwoman", platform: "PC", email: "diana@themyscira.com" },
-            { id: 9, nickname: "flash", platform: "Nintendo", email: "barry@allen.com" },
-            { id: 10, nickname: "aquaman", platform: "Playstation", email: "arthur@atlantis.com" },
-            { id: 11, nickname: "cyborg", platform: "PC", email: "victor@stone.com" },
-            { id: 12, nickname: "superman", platform: "Xbox", email: "clark@kent.com" }
-        ];
+    <div id="errorMessage" class="error-message" style="display: none;">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorText">Erro ao carregar os players.</span>
+    </div>
 
-        // Variáveis globais
-        let currentPage = 1;
-        const playersPerPage = 5;
-        let filteredPlayers = [...players];
-        let sortField = 'id';
-        let sortDirection = 'asc';
+    <div id="playersContent" style="display: none;">
+        <table class="players-table">
+            <thead>
+            <tr>
+                <th data-sort="id">ID <i class="fas fa-sort"></i></th>
+                <th data-sort="nickname">Nickname <i class="fas fa-sort"></i></th>
+                <th data-sort="plataforma">Plataforma <i class="fas fa-sort"></i></th>
+                <th data-sort="email">Email <i class="fas fa-sort"></i></th>
+            </tr>
+            </thead>
+            <tbody id="playersTableBody">
+            <!-- Os players serão carregados via JavaScript -->
+            </tbody>
+        </table>
 
-        // Função para renderizar a tabela de players
-        function renderPlayersTable() {
-            const tableBody = document.getElementById('playersTableBody');
-            tableBody.innerHTML = '';
-            
-            // Calcular players para a página atual
-            const startIndex = (currentPage - 1) * playersPerPage;
-            const endIndex = startIndex + playersPerPage;
-            const playersToShow = filteredPlayers.slice(startIndex, endIndex);
-            
-            if (playersToShow.length === 0) {
-                document.getElementById('playersContent').style.display = 'none';
-                document.getElementById('noResults').style.display = 'block';
+        <div class="pagination" id="pagination">
+            <!-- A paginação será gerada via JavaScript -->
+        </div>
+    </div>
+
+    <div id="noResults" class="no-results" style="display: none;">
+        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px;"></i>
+        <p>Nenhum player encontrado com os critérios de pesquisa.</p>
+    </div>
+</div>
+
+<div class="footer">
+    <p>&copy; 2025 GameScore Manager - Todos os direitos reservados</p>
+</div>
+
+<script>
+    // Variáveis globais
+    let allPlayers = [];
+    let currentPage = 1;
+    const playersPerPage = 10;
+    let filteredPlayers = [];
+    let sortField = 'id';
+    let sortDirection = 'asc';
+    let searchTimeout = null;
+
+    const API_BASE_URL = 'http://localhost:8081/api/players';
+
+    // Função para buscar players da API
+    async function fetchPlayers() {
+        try {
+            showLoading();
+            const response = await fetch(API_BASE_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`);
+            }
+
+            const players = await response.json();
+
+            // Verificar se a resposta contém um array
+            if (!Array.isArray(players)) {
+                throw new Error('Resposta da API não é um array válido');
+            }
+
+            console.log('Players recebidos:', players.length);
+            allPlayers = players;
+            filteredPlayers = [...allPlayers];
+
+            hideLoading();
+            renderPlayersTable();
+        } catch (error) {
+            console.error('Erro ao buscar players:', error);
+            showError('Erro ao carregar players. Verifique se a API está rodando em http://localhost:8081');
+        }
+    }
+
+    // Função para buscar players por nickname
+    async function searchPlayersByNickname(searchTerm) {
+        try {
+            if (searchTerm.trim() === '') {
+                // Se a pesquisa estiver vazia, use todos os players
+                filteredPlayers = [...allPlayers];
+                renderPlayersTable();
                 return;
             }
-            
-            document.getElementById('playersContent').style.display = 'block';
-            document.getElementById('noResults').style.display = 'none';
-            
-            // Preencher a tabela com os players
-            playersToShow.forEach(player => {
-                const row = document.createElement('tr');
-                
-                // Determinar a classe da plataforma
-                let platformClass = '';
-                switch(player.platform) {
-                    case 'PC': platformClass = 'platform-pc'; break;
-                    case 'Playstation': platformClass = 'platform-playstation'; break;
-                    case 'Xbox': platformClass = 'platform-xbox'; break;
-                    case 'Nintendo': platformClass = 'platform-nintendo'; break;
+
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/search?nickname=${encodeURIComponent(searchTerm)}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
-                
-                row.innerHTML = `
-                    <td>${player.id}</td>
-                    <td>${player.nickname}</td>
-                    <td><span class="platform-badge ${platformClass}">${player.platform}</span></td>
-                    <td>${player.email}</td>
-                `;
-                
-                tableBody.appendChild(row);
             });
-            
-            // Renderizar paginação
-            renderPagination();
-        }
-        
-        // Função para renderizar a paginação
-        function renderPagination() {
-            const paginationElement = document.getElementById('pagination');
-            paginationElement.innerHTML = '';
-            
-            const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
-            
-            if (totalPages <= 1) return;
-            
-            // Botão anterior
-            if (currentPage > 1) {
-                const prevButton = document.createElement('button');
-                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-                prevButton.addEventListener('click', () => {
-                    currentPage--;
-                    renderPlayersTable();
-                });
-                paginationElement.appendChild(prevButton);
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
             }
-            
-            // Páginas
-            for (let i = 1; i <= totalPages; i++) {
-                const pageButton = document.createElement('button');
-                pageButton.textContent = i;
-                if (i === currentPage) {
-                    pageButton.classList.add('active');
-                }
-                pageButton.addEventListener('click', () => {
-                    currentPage = i;
-                    renderPlayersTable();
-                });
-                paginationElement.appendChild(pageButton);
+
+            const searchResults = await response.json();
+
+            if (!Array.isArray(searchResults)) {
+                throw new Error('Resposta da pesquisa não é um array válido');
             }
-            
-            // Botão próximo
-            if (currentPage < totalPages) {
-                const nextButton = document.createElement('button');
-                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                nextButton.addEventListener('click', () => {
-                    currentPage++;
-                    renderPlayersTable();
-                });
-                paginationElement.appendChild(nextButton);
-            }
-        }
-        
-        // Função para filtrar e ordenar players
-        function filterAndSortPlayers() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const platformFilter = document.getElementById('platformFilter').value;
-            
-            // Filtrar players
-            filteredPlayers = players.filter(player => {
-                const matchesSearch = player.nickname.toLowerCase().includes(searchTerm) || 
-                                     player.email.toLowerCase().includes(searchTerm);
-                const matchesPlatform = platformFilter === '' || player.platform === platformFilter;
-                
-                return matchesSearch && matchesPlatform;
-            });
-            
-            // Ordenar players
-            filteredPlayers.sort((a, b) => {
-                let valueA = a[sortField];
-                let valueB = b[sortField];
-                
-                // Para ordenação de strings
-                if (typeof valueA === 'string') {
-                    valueA = valueA.toLowerCase();
-                    valueB = valueB.toLowerCase();
-                }
-                
-                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
-                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
-            
-            currentPage = 1;
+
+            filteredPlayers = searchResults;
+            currentPage = 1; // Reset para a primeira página
+            hideLoading();
+            renderPlayersTable();
+        } catch (error) {
+            console.error('Erro ao buscar players:', error);
+            showError('Erro ao pesquisar players.');
+
+            // Fallback: filtro local se a API falhar
+            filteredPlayers = allPlayers.filter(player =>
+                player.nickname && player.nickname.toLowerCase().includes(searchTerm.toLowerCase())
+            );
             renderPlayersTable();
         }
-        
-        // Inicializar a página
-        document.addEventListener('DOMContentLoaded', function() {
-            // Simular carregamento
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
+    }
+
+    // Função para buscar players por plataforma
+    async function filterPlayersByPlatform(platform) {
+        try {
+            if (platform === '') {
+                // Se nenhuma plataforma selecionada, use todos os players
+                filteredPlayers = [...allPlayers];
                 renderPlayersTable();
-                
-                // Configurar eventos
-                document.getElementById('searchInput').addEventListener('input', filterAndSortPlayers);
-                document.getElementById('platformFilter').addEventListener('change', filterAndSortPlayers);
-                document.getElementById('sortBy').addEventListener('change', function() {
-                    sortField = this.value;
-                    filterAndSortPlayers();
-                });
-                
-                // Configurar ordenação ao clicar nos cabeçalhos
-                document.querySelectorAll('th').forEach((th, index) => {
-                    th.addEventListener('click', () => {
-                        const fields = ['id', 'nickname', 'platform', 'email'];
-                        if (index < fields.length) {
-                            if (sortField === fields[index]) {
-                                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                            } else {
-                                sortField = fields[index];
-                                sortDirection = 'asc';
-                            }
-                            filterAndSortPlayers();
-                        }
-                    });
-                });
-            }, 1000);
+                return;
+            }
+
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/plataforma/${encodeURIComponent(platform)}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const platformResults = await response.json();
+
+            if (!Array.isArray(platformResults)) {
+                throw new Error('Resposta do filtro por plataforma não é um array válido');
+            }
+
+            filteredPlayers = platformResults;
+            currentPage = 1; // Reset para a primeira página
+            hideLoading();
+            renderPlayersTable();
+        } catch (error) {
+            console.error('Erro ao filtrar players:', error);
+            showError('Erro ao filtrar players por plataforma.');
+
+            // Fallback: filtro local se a API falhar
+            filteredPlayers = allPlayers.filter(player =>
+                player.plataforma && player.plataforma.toLowerCase() === platform.toLowerCase()
+            );
+            renderPlayersTable();
+        }
+    }
+
+    // Função para renderizar a tabela de players
+    function renderPlayersTable() {
+        const tableBody = document.getElementById('playersTableBody');
+        tableBody.innerHTML = '';
+
+        // Ordenar players
+        sortPlayers();
+
+        // Calcular players para a página atual
+        const startIndex = (currentPage - 1) * playersPerPage;
+        const endIndex = startIndex + playersPerPage;
+        const playersToShow = filteredPlayers.slice(startIndex, endIndex);
+
+        if (playersToShow.length === 0) {
+            document.getElementById('playersContent').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('playersContent').style.display = 'block';
+        document.getElementById('noResults').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+
+        // Preencher a tabela com os players
+        playersToShow.forEach(player => {
+            const row = document.createElement('tr');
+
+            // Determinar a classe da plataforma
+            let platformClass = '';
+            if (player.plataforma) {
+                switch(player.plataforma.toLowerCase()) {
+                    case 'pc': platformClass = 'platform-pc'; break;
+                    case 'playstation': platformClass = 'platform-playstation'; break;
+                    case 'xbox': platformClass = 'platform-xbox'; break;
+                    case 'nintendo':
+                    case 'nintendo switch': platformClass = 'platform-nintendo'; break;
+                    default: platformClass = 'platform-pc';
+                }
+            } else {
+                platformClass = 'platform-pc';
+            }
+
+            row.innerHTML = `
+                <td>${player.id || 'N/A'}</td>
+                <td>${player.nickname || 'Nickname não disponível'}</td>
+                <td><span class="platform-badge ${platformClass}">${player.plataforma || 'Não especificada'}</span></td>
+                <td>${player.email || 'Email não disponível'}</td>
+            `;
+
+            tableBody.appendChild(row);
         });
-    </script>
+
+        // Renderizar paginação
+        renderPagination();
+    }
+
+    // Função para ordenar players
+    function sortPlayers() {
+        filteredPlayers.sort((a, b) => {
+            let valueA = a[sortField];
+            let valueB = b[sortField];
+
+            // Tratar valores undefined ou null
+            if (valueA === null || valueA === undefined) valueA = '';
+            if (valueB === null || valueB === undefined) valueB = '';
+
+            // Para ordenação de strings
+            if (typeof valueA === 'string') {
+                valueA = valueA.toLowerCase();
+                valueB = valueB.toLowerCase();
+            }
+
+            if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+            if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Função para renderizar a paginação
+    function renderPagination() {
+        const paginationElement = document.getElementById('pagination');
+        paginationElement.innerHTML = '';
+
+        const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
+
+        if (totalPages <= 1) return;
+
+        // Botão anterior
+        if (currentPage > 1) {
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.addEventListener('click', () => {
+                currentPage--;
+                renderPlayersTable();
+            });
+            paginationElement.appendChild(prevButton);
+        }
+
+        // Páginas
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            if (i === currentPage) {
+                pageButton.classList.add('active');
+            }
+            pageButton.addEventListener('click', () => {
+                currentPage = i;
+                renderPlayersTable();
+            });
+            paginationElement.appendChild(pageButton);
+        }
+
+        // Botão próximo
+        if (currentPage < totalPages) {
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.addEventListener('click', () => {
+                currentPage++;
+                renderPlayersTable();
+            });
+            paginationElement.appendChild(nextButton);
+        }
+    }
+
+    // Funções auxiliares para exibir/ocultar estados
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('playersContent').style.display = 'none';
+        document.getElementById('noResults').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    function showError(message) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('playersContent').style.display = 'none';
+        document.getElementById('noResults').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('errorText').textContent = message;
+    }
+
+    // Inicializar a página
+    document.addEventListener('DOMContentLoaded', function() {
+        // Buscar players da API
+        fetchPlayers();
+
+        // Configurar eventos
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.trim();
+
+            // Debounce para evitar muitas requisições
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (searchTerm === '') {
+                    // Se campo vazio, recarregar todos os players
+                    filteredPlayers = [...allPlayers];
+                    currentPage = 1;
+                    renderPlayersTable();
+                } else {
+                    searchPlayersByNickname(searchTerm);
+                }
+            }, 500);
+        });
+
+        document.getElementById('platformFilter').addEventListener('change', function() {
+            const selectedPlatform = this.value;
+            filterPlayersByPlatform(selectedPlatform);
+        });
+
+        document.getElementById('sortBy').addEventListener('change', function() {
+            sortField = this.value;
+            sortDirection = 'asc';
+            renderPlayersTable();
+        });
+
+        // Configurar ordenação ao clicar nos cabeçalhos
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.getAttribute('data-sort');
+
+                if (sortField === field) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortField = field;
+                    sortDirection = 'asc';
+                }
+
+                // Atualizar o select de ordenação para refletir a mudança
+                document.getElementById('sortBy').value = sortField;
+
+                renderPlayersTable();
+            });
+        });
+    });
+</script>
 </body>
 </html>
